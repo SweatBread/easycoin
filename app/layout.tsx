@@ -4,7 +4,7 @@ import { SolanaWalletProvider } from '../components/WalletProvider';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Solana Token Dashboard',
+  title: 'Easy Coin',
   description: 'Create and manage your Solana tokens with integrated Raydium LP',
 };
 
@@ -15,9 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <SolanaWalletProvider>{children}</SolanaWalletProvider>
-      </body>
+    <body data-theme="easycoin">
+    <SolanaWalletProvider>
+      {children}
+    </SolanaWalletProvider>
+    </body>
     </html>
   );
 }

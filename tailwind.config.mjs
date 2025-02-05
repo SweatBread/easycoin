@@ -1,3 +1,4 @@
+/** @type {import('postcss-load-config').Config} */
 module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
@@ -5,6 +6,6 @@ module.exports = {
   ],
   theme: {
     extend: {},
-  },
-  plugins: [require('daisyui')],
+    plugins: [daisyui],
+  }
 }
