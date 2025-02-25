@@ -3,6 +3,11 @@
 
 import { useState } from 'react';
 import { z } from 'zod';
+import FormInput from './FormComponents/FormInput';
+import FormTextarea from './FormComponents/FormTextarea';
+import FormFileInput from './FormComponents/FormFileInput';
+import SocialLinksGroup from './FormComponents/SocialLinkGroup';
+import RevokeCheckbox from './FormComponents/RevokeCheckbox';
 
 const tokenSchema = z.object({
   tokenName: z.string().min(3, 'Token Name must be at least 3 characters').max(32, 'Token Name cannot exceed 32 characters'),
@@ -13,7 +18,9 @@ const tokenSchema = z.object({
   telegram: z.string().url('Invalid URL').optional(),
   website: z.string().url('Invalid URL').optional(),
   twitter: z.string().url('Invalid URL').optional(),
-  // We'll handle image upload separately.
+  revokeMint: z.boolean(),
+  revokeFreeze: z.boolean(),
+  revokeUpdate: z.boolean()
 });
 
 type TokenFormData = z.infer<typeof tokenSchema>;
@@ -26,11 +33,32 @@ export default function TokenForm() {
     telegram: '',
     website: '',
     twitter: '',
+    revokeMint: true,
+    revokeFreeze: true,
+    revokeUpdate: true
   });
   const [errors, setErrors] = useState<Partial<Record<keyof TokenFormData, string>>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, type, checked, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      tokenSchema.parse(formData);
+      setErrors({});
+      console.log('Token creation data:', formData);
+    } catch (error: any) {
+      if (error.errors) {
+        const fieldErrors: any = {};
+        error.errors.forEach((err: any) => {
+          fieldErrors[err.path[0]] = err.message;
+        });
+        setErrors(fieldErrors);
+      }
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,105 +78,74 @@ export default function TokenForm() {
     // const imageUrl = await uploadImageToIPFS(file);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      tokenSchema.parse(formData);
-      setErrors({});
-
-      // Integrate with Solana's SPL Token library to create the token.
-      // This would involve creating and signing a transaction using your wallet.
-      // Example: await createTokenTransaction(formData);
-
-      console.log('Token creation data:', formData);
-    } catch (error: any) {
-      if (error.errors) {
-        const fieldErrors: any = {};
-        error.errors.forEach((err: any) => {
-          fieldErrors[err.path[0]] = err.message;
-        });
-        setErrors(fieldErrors);
-      }
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto p-4">
-      <div>
-        <label className="block">Token Name</label>
-        <input
-          name="tokenName"
-          value={formData.tokenName}
-          onChange={handleChange}
-          className="input input-bordered w-full"
-          placeholder="My Token"
-        />
-        {errors.tokenName && <p className="text-red-500 text-sm">{errors.tokenName}</p>}
-      </div>
+    <form onSubmit={handleSubmit} className="card bg-base-100 shadow-xl p-6 max-w-2xl mx-auto space-y-6">
+      <FormInput
+        name="tokenName"
+        label="Token Name"
+        value={formData.tokenName}
+        onChange={handleChange}
+        error={errors.tokenName}
+        placeholder="My Token"
+      />
 
-      <div>
-        <label className="block">Ticker</label>
-        <input
-          name="ticker"
-          value={formData.ticker}
-          onChange={handleChange}
-          className="input input-bordered w-full"
-          placeholder="MTK"
-        />
-        {errors.ticker && <p className="text-red-500 text-sm">{errors.ticker}</p>}
-      </div>
+      <FormInput
+        name="ticker"
+        label="Ticker"
+        value={formData.ticker}
+        onChange={handleChange}
+        error={errors.ticker}
+        placeholder="MTK"
+      />
 
-      <div>
-        <label className="block">Description (Markdown supported)</label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="textarea textarea-bordered w-full"
-          placeholder="Describe your token..."
-        />
-      </div>
+      <FormTextarea
+        name="description"
+        label="Description (Markdown supported)"
+        value={formData.description}
+        onChange={handleChange}
+        placeholder="Describe your token..."
+      />
 
-      <div>
-        <label className="block">Image Upload (PNG, max 2MB)</label>
-        <input type="file" accept="image/png" onChange={handleImageUpload} className="file-input file-input-bordered w-full" />
-        {errors.image && <p className="text-red-500 text-sm">{errors.image}</p>}
-      </div>
+      <FormFileInput
+        name="image"
+        label="Image Upload (PNG, max 2MB)"
+        onChange={handleImageUpload}
+        error={errors.image}
+      />
+
+      <SocialLinksGroup
+        links={[
+          { name: 'telegram', label: 'Telegram', placeholder: 'https://t.me/yourchannel' },
+          { name: 'website', label: 'Website', placeholder: 'https://yourwebsite.com' },
+          { name: 'twitter', label: 'Twitter/X', placeholder: 'https://twitter.com/yourhandle' }
+        ]}
+        formData={formData}
+        errors={errors}
+        handleChange={handleChange}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block">Telegram</label>
-          <input
-            name="telegram"
-            value={formData.telegram}
-            onChange={handleChange}
-            className="input input-bordered w-full"
-            placeholder="https://t.me/yourchannel"
-          />
-          {errors.telegram && <p className="text-red-500 text-sm">{errors.telegram}</p>}
-        </div>
-        <div>
-          <label className="block">Website</label>
-          <input
-            name="website"
-            value={formData.website}
-            onChange={handleChange}
-            className="input input-bordered w-full"
-            placeholder="https://yourwebsite.com"
-          />
-          {errors.website && <p className="text-red-500 text-sm">{errors.website}</p>}
-        </div>
-        <div>
-          <label className="block">Twitter/X</label>
-          <input
-            name="twitter"
-            value={formData.twitter}
-            onChange={handleChange}
-            className="input input-bordered w-full"
-            placeholder="https://twitter.com/yourhandle"
-          />
-          {errors.twitter && <p className="text-red-500 text-sm">{errors.twitter}</p>}
-        </div>
+        <RevokeCheckbox
+          name="revokeMint"
+          label="Revoke Mint"
+          description="Mint Authority allows you to mint more supply of your token."
+          checked={formData.revokeMint}
+          onChange={handleChange}
+        />
+        <RevokeCheckbox
+          name="revokeFreeze"
+          label="Revoke Freeze"
+          description="Freeze Authority allows you to freeze token accounts of holders."
+          checked={formData.revokeFreeze}
+          onChange={handleChange}
+        />
+        <RevokeCheckbox
+          name="revokeUpdate"
+          label="Revoke Update"
+          description="Update Authority allows you to update the token metadata about your token."
+          checked={formData.revokeUpdate}
+          onChange={handleChange}
+        />
       </div>
 
       <button type="submit" className="btn btn-primary w-full">

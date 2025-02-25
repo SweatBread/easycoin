@@ -2,6 +2,7 @@
 import './globals.css';
 import { SolanaWalletProvider } from '../components/WalletProvider';
 import type { Metadata } from 'next';
+import Navbar from '@/components/navbar';
 
 export const metadata: Metadata = {
   title: 'Easy Coin',
@@ -15,8 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-    <body data-theme="easycoin">
+    <body>
     <SolanaWalletProvider>
+      <Navbar />
       {children}
     </SolanaWalletProvider>
     </body>
